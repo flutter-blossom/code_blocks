@@ -17,7 +17,7 @@ dependencies:
   auto_size_text_field: ^1.0.0-nullsafety.1
   flutter_widget_model:
     git:
-      url: git@github.com:sanihaq/widget_models.git
+      url: git://github.com/flutter-blossom/flutter_widget_model.git
       ref: master
 
 dev_dependencies:

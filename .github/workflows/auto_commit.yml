@@ -1,36 +1,36 @@
-name: pull to release
+# name: pull to release
 
-on:
-  push:
-    branches: [ main ]
+# on:
+#   push:
+#     branches: [ main ]
 
-jobs:
-  publish:
-    runs-on: ubuntu-latest
+# jobs:
+#   publish:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - uses: webfactory/ssh-agent@v0.5.2
-        with:
-          ssh-private-key: ${{ secrets.SSH_PKEY }}
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - run: git config --global merge.ours.driver true
-      - run: git config --global user.email "work.sanihaq@gmail.com"
-      - run: git config --global user.name "sanihaq"
-      - run: git checkout release
-      - run: git merge -s ours main
-      - run: git push
-      - uses: subosito/flutter-action@v1
-      - run: dart pub global activate --source path -sgit https://github.com/flutter-blossom/blossom_cli.git
-      - run: blossom switch-to --github=flutter-blossom/flutter_blossom/packages private_remote
-      - run: flutter pub get
-      - run: flutter test
-      - uses: stefanzweifel/git-auto-commit-action@v4.11.0
-        with:
-          commit_message: Auto Commit
-      - name: Report Status to Slack
-        if: always()
-        uses: endcrawl/github-action-slack-notify-curl@master
-        with:
-          slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
+#     steps:
+#       - uses: webfactory/ssh-agent@v0.5.2
+#         with:
+#           ssh-private-key: ${{ secrets.SSH_PKEY }}
+#       - uses: actions/checkout@v2
+#         with:
+#           fetch-depth: 0
+#       - run: git config --global merge.ours.driver true
+#       - run: git config --global user.email "work.sanihaq@gmail.com"
+#       - run: git config --global user.name "sanihaq"
+#       - run: git checkout release
+#       - run: git merge -s ours main
+#       - run: git push
+#       - uses: subosito/flutter-action@v1
+#       - run: dart pub global activate --source path -sgit https://github.com/flutter-blossom/blossom_cli.git
+#       - run: blossom switch-to --github=flutter-blossom/flutter_blossom/packages private_remote
+#       - run: flutter pub get
+#       - run: flutter test
+#       - uses: stefanzweifel/git-auto-commit-action@v4.11.0
+#         with:
+#           commit_message: Auto Commit
+#       - name: Report Status to Slack
+#         if: always()
+#         uses: endcrawl/github-action-slack-notify-curl@master
+#         with:
+#           slack_webhook: ${{ secrets.SLACK_WEBHOOK }}
