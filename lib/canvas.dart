@@ -1,11 +1,12 @@
 import 'package:better_print/better_print.dart';
 import 'package:code_blocks/blocks/set_block.dart';
+import 'package:code_blocks/blocks/set_state_block.dart';
 import 'package:code_blocks/code_blocks.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 
 import 'blocks/add_block.dart';
-import 'blocks/divide_block copy.dart';
+import 'blocks/divide_block.dart';
 import 'blocks/else_block.dart';
 import 'blocks/for_block.dart';
 import 'blocks/if_block.dart';
@@ -18,6 +19,7 @@ class BlockCanvas extends StatelessWidget {
   BlockCanvas({
     required this.controller,
     required this.onAdd,
+    required this.onReplace,
     required this.onUpdate,
     required this.onDelete,
     this.maxHeight,
@@ -27,6 +29,7 @@ class BlockCanvas extends StatelessWidget {
   final BlockController controller;
   final double? maxHeight;
   final void Function(String? key, BlockType type) onAdd;
+  final void Function(String? key, Block block) onReplace;
   final void Function(String? key, Block type) onUpdate;
   final void Function(String key) onDelete;
 
@@ -43,24 +46,60 @@ class BlockCanvas extends StatelessWidget {
 
   Widget _getBlock(Block block, {Block? parent}) {
     Widget? result;
+    final selectWidget = DropdownButton<String>(
+      isDense: true,
+      value: block.data['key'],
+      onTap: () {},
+      onChanged: (value) {
+        block.data['key'] = value;
+        block.data['root'] = controller.root.key;
+        block.data['type'] =
+            EnumToString.convertToString(controller.root.properties[value]!.type);
+        onUpdate(block.key, block.copyWith(data: block.data));
+      },
+      items: controller.root.properties.entries
+          .skip(1)
+          .map((e) => DropdownMenuItem<String>(
+                value: e.key,
+                child: RichText(
+                  text: TextSpan(
+                      text: e.key,
+                      style: TextStyle(color: Colors.black),
+                      children: [
+                        TextSpan(
+                          text: ' ' + e.value.type.toString().split('.')[1],
+                          style: TextStyle(color: Colors.black.withOpacity(0.5)),
+                        )
+                      ]),
+                ),
+                onTap: () {},
+              ))
+          .toList(),
+    );
     switch (block.type) {
+      case BlockType.SetState:
+        result = SetStateBlock(
+          add: onAdd,
+          children: block.children.map((e) => _getBlock(e, parent: block)).toList(),
+          actions: [ActionButton(onDelete: () => onDelete(block.key))],
+        );
+        break;
       case BlockType.Set:
         result = SetBlock(
           onUpdate: (data) {
             onUpdate(block.key, block.copyWith(data: data));
           },
+          propertySelectWidget: selectWidget,
           data: block.data,
           root: controller.root,
-          children:
-              block.children.map((e) => _getBlock(e, parent: block)).toList(),
+          children: block.children.map((e) => _getBlock(e, parent: block)).toList(),
           actions: [ActionButton(onDelete: () => onDelete(block.key))],
         );
         break;
       case BlockType.Return:
         result = ReturnBlock(
           add: onAdd,
-          children:
-              block.children.map((e) => _getBlock(e, parent: block)).toList(),
+          children: block.children.map((e) => _getBlock(e, parent: block)).toList(),
           actions: [ActionButton(onDelete: () => onDelete(block.key))],
         );
         break;
@@ -69,95 +108,140 @@ class BlockCanvas extends StatelessWidget {
           onUpdate: (data) {
             onUpdate(block.key, block.copyWith(data: data));
           },
+          propertySelectWidget: selectWidget,
           data: block.data,
           root: controller.root,
-          children:
-              block.children.map((e) => _getBlock(e, parent: block)).toList(),
+          children: block.children.map((e) => _getBlock(e, parent: block)).toList(),
           actions: [ActionButton(onDelete: () => onDelete(block.key))],
         );
         break;
       case BlockType.For:
         result = ForBlock(
           add: onAdd,
-          children:
-              block.children.map((e) => _getBlock(e, parent: block)).toList(),
+          children: block.children.map((e) => _getBlock(e, parent: block)).toList(),
           actions: [ActionButton(onDelete: () => onDelete(block.key))],
         );
         break;
       case BlockType.While:
         result = WhileBlock(
           add: onAdd,
-          children:
-              block.children.map((e) => _getBlock(e, parent: block)).toList(),
+          children: block.children.map((e) => _getBlock(e, parent: block)).toList(),
           actions: [ActionButton(onDelete: () => onDelete(block.key))],
         );
         break;
       case BlockType.Subtract:
         result = SubtractBlock(
           add: onAdd,
-          children:
-              block.children.map((e) => _getBlock(e, parent: block)).toList(),
+          children: block.children.map((e) => _getBlock(e, parent: block)).toList(),
           actions: [ActionButton(onDelete: () => onDelete(block.key))],
         );
         break;
       case BlockType.Multiply:
         result = MultiplyBlock(
           add: onAdd,
-          children:
-              block.children.map((e) => _getBlock(e, parent: block)).toList(),
+          children: block.children.map((e) => _getBlock(e, parent: block)).toList(),
           actions: [ActionButton(onDelete: () => onDelete(block.key))],
         );
         break;
       case BlockType.Divide:
         result = DivideBlock(
           add: onAdd,
-          children:
-              block.children.map((e) => _getBlock(e, parent: block)).toList(),
+          children: block.children.map((e) => _getBlock(e, parent: block)).toList(),
           actions: [ActionButton(onDelete: () => onDelete(block.key))],
         );
         break;
       case BlockType.If:
         result = IfBlock(
           add: onAdd,
-          children:
-              block.children.map((e) => _getBlock(e, parent: block)).toList(),
+          children: block.children.map((e) => _getBlock(e, parent: block)).toList(),
           actions: [ActionButton(onDelete: () => onDelete(block.key))],
         );
         break;
       case BlockType.Else:
         result = ElseBlock(
           add: onAdd,
-          children:
-              block.children.map((e) => _getBlock(e, parent: block)).toList(),
+          children: block.children.map((e) => _getBlock(e, parent: block)).toList(),
           actions: [ActionButton(onDelete: () => onDelete(block.key))],
         );
+        break;
+      case BlockType.Error:
+        result = Container(
+          decoration: BoxDecoration(
+            color: Colors.amber.withOpacity(0.2),
+            border: Border.all(
+              width: 2,
+              color: Colors.amber,
+            ),
+          ),
+          width: 60,
+          height: 40,
+          child: Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Error'),
+                GestureDetector(
+                    onTap: () => onDelete(block.key),
+                    child: Icon(
+                      Icons.delete,
+                      size: 16,
+                    ))
+              ],
+            ),
+          ),
+        );
+        // TODO: Handle this case.
         break;
     }
     // ignore: unnecessary_null_comparison
     return result != null
-        ? DragTarget<BlockType>(
+        ? DragTarget<Block>(
             onWillAccept: (b) {
-              if (b == BlockType.Set)
-                return block.type != BlockType.Set &&
-                    block.type != BlockType.Return;
-              if (b == BlockType.Return)
-                return block.type != BlockType.Return &&
-                    block.type != BlockType.Set;
-              if (b == BlockType.Else)
-                return block.children.length > 0 &&
-                    block.children.last.type == BlockType.If;
-              return true;
+              return b is Block && b.key != block.key;
             },
-            onAccept: (BlockType type) {
-              onAdd(block.key, type);
+            onAccept: (b) {
+              onDelete(b.key);
+              onReplace(block.key, b);
             },
-            builder: (context, List<BlockType?> candidateData,
-                    List<dynamic> rejectedData) =>
-                Opacity(
-              opacity: candidateData.isEmpty ? 1 : 0.5,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: result,
+            builder: (context, List<Block?> candidateData1, List<dynamic> rejectedData) =>
+                DragTarget<BlockType>(
+              onWillAccept: (b) {
+                var result = b is BlockType;
+                if (b is BlockType) {
+                  if (b == BlockType.Set)
+                    result =
+                        block.type != BlockType.Set && block.type != BlockType.Return;
+                  if (b == BlockType.Return)
+                    result =
+                        block.type != BlockType.Return && block.type != BlockType.Set;
+                  if (b == BlockType.Else)
+                    result = block.children.length > 0 &&
+                        block.children.last.type == BlockType.If;
+                }
+                return result;
+              },
+              onAccept: (type) {
+                onAdd(block.key, type);
+              },
+              builder: (context, List<BlockType?> candidateData2,
+                      List<dynamic> rejectedData) =>
+                  Opacity(
+                opacity: candidateData1.isNotEmpty || candidateData2.isNotEmpty ? 0.5 : 1,
+                child: Draggable(
+                  data: block,
+                  feedback: Material(child: result),
+                  child: Padding(
+                    padding: const EdgeInsets.all(1.0),
+                    child: Transform.scale(
+                        alignment: Alignment.topLeft,
+                        scale: candidateData1.isNotEmpty || candidateData2.isNotEmpty
+                            ? 1.02
+                            : 1.0,
+                        child: result),
+                  ),
+                  childWhenDragging: SizedBox(),
+                ),
               ),
             ),
           )
@@ -166,92 +250,88 @@ class BlockCanvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var dragTarget = DragTarget<BlockType>(
-      onAccept: (BlockType type) {
-        onAdd(null, type);
-      },
-      builder: (context, List<BlockType?> candidateData,
-              List<dynamic> rejectedData) =>
-          Container(
-        constraints: BoxConstraints(minWidth: 50),
-        width: double.infinity,
-        color: Colors.grey.withOpacity(candidateData.isNotEmpty ? 0.5 : 0.4),
-        child: Padding(
-          padding: const EdgeInsets.all(4.0),
-          child: Icon(
-            Icons.add,
-            color: candidateData.isNotEmpty ? Colors.black54 : Colors.black26,
-          ),
-        ),
-      ),
-    );
     return Container(
-      width: double.infinity,
       color: this.backgroundColor,
       constraints: BoxConstraints(maxHeight: maxHeight ?? double.infinity),
-      child: Stack(
+      child: Row(
         children: [
-          ListView(
-            shrinkWrap: true,
-            children: controller.children
-                .map(
-                  (e) => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _getBlock(e),
-                    ],
-                  ),
-                )
-                .toList(),
-          ),
-          if (!controller.children.any((e) => e.type == BlockType.Return))
-            if (controller.children.isNotEmpty)
-              Align(
-                alignment: Alignment.bottomLeft,
-                child: dragTarget,
-              )
-            else
-              Column(
-                children: [
-                  Expanded(
-                    child: dragTarget,
-                  ),
-                ],
+          Container(
+            height: double.infinity,
+            width: 80,
+            color: Colors.grey.withOpacity(0.2),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: BlockType.values
+                    .map((e) => Padding(
+                          padding: const EdgeInsets.all(2.0),
+                          child: Draggable(
+                              data: e,
+                              feedback: _getBox(Material(
+                                color: Colors.transparent,
+                                child: Text(EnumToString.convertToString(e),
+                                    style: TextStyle(color: Colors.black45)),
+                              )),
+                              child: _getBox(Text(
+                                EnumToString.convertToString(e),
+                                style: TextStyle(color: Colors.black.withOpacity(0.7)),
+                              ))),
+                        ))
+                    .toList(),
               ),
-          Align(
-            alignment: Alignment.centerRight,
+            ),
+          ),
+          Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Container(
-                color: controller.children.isNotEmpty
-                    ? Colors.grey.withOpacity(0.3)
-                    : null,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: BlockType.values
-                        .map((e) => Padding(
-                              padding: const EdgeInsets.all(2.0),
-                              child: Draggable(
-                                  data: e,
-                                  feedback: _getBox(Material(
-                                    color: Colors.transparent,
-                                    child: Text(EnumToString.convertToString(e),
-                                        style:
-                                            TextStyle(color: Colors.black45)),
-                                  )),
-                                  child: _getBox(Text(
-                                    EnumToString.convertToString(e),
-                                    style: TextStyle(
-                                        color: Colors.black.withOpacity(0.7)),
-                                  ))),
-                            ))
-                        .toList(),
+              padding: const EdgeInsets.all(4),
+              child: DragTarget<Block>(
+                onAccept: (Block b) {
+                  onDelete(b.key);
+                  onReplace(null, b);
+                },
+                onWillAccept: (b) =>
+                    b is Block &&
+                    !controller.children.any((e) => e.type == BlockType.Return),
+                builder:
+                    (context, List<Block?> candidateData1, List<dynamic> rejectedData) =>
+                        DragTarget<BlockType>(
+                  onAccept: (BlockType type) {
+                    onAdd(null, type);
+                  },
+                  onWillAccept: (val) =>
+                      val is BlockType &&
+                      !controller.children.any((e) => e.type == BlockType.Return),
+                  builder: (context, List<BlockType?> candidateData2,
+                          List<dynamic> rejectedData) =>
+                      SingleChildScrollView(
+                    child: Container(
+                      constraints: BoxConstraints(
+                        minHeight: MediaQuery.of(context).size.height - 110,
+                      ),
+                      color: candidateData1.isNotEmpty || candidateData2.isNotEmpty
+                          ? Colors.grey.withOpacity(0.02)
+                          : null,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: controller.children
+                            .map(
+                              (e) => Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _getBlock(e),
+                                ],
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -274,17 +354,20 @@ class _ActionButtonState extends State<ActionButton> {
   bool _isOnHover = false;
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: widget.onDelete,
-      onHover: (val) {
-        setState(() {
-          _isOnHover = val;
-        });
-      },
-      child: Icon(
-        Icons.delete_forever,
-        size: 15,
-        color: _isOnHover ? Colors.black87 : Colors.black54,
+    return Padding(
+      padding: const EdgeInsets.all(2.0),
+      child: InkWell(
+        onTap: widget.onDelete,
+        onHover: (val) {
+          setState(() {
+            _isOnHover = val;
+          });
+        },
+        child: Icon(
+          Icons.delete_forever,
+          size: 15,
+          color: _isOnHover ? Colors.black87 : Colors.black54,
+        ),
       ),
     );
   }

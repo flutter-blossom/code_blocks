@@ -16,9 +16,7 @@ dependencies:
   enum_to_string: ^2.0.1
   auto_size_text_field: ^1.0.0-nullsafety.1
   flutter_widget_model:
-    git:
-      url: git://github.com/flutter-blossom/flutter_widget_model.git
-      ref: master
+    path: ../flutter_widget_model/
 
 dev_dependencies:
   flutter_test:
