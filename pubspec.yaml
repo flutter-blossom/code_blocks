@@ -18,7 +18,6 @@ dependencies:
   flutter_widget_model:
     git:
       url: git@github.com:sanihaq/widget_models.git
-      url: git://github.com/flutter-blossom/flutter_widget_model.git
       ref: master
 
 dev_dependencies:
