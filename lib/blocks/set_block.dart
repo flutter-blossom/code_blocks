@@ -4,17 +4,21 @@ import 'package:flutter_widget_model/flutter_widget_model.dart';
 import '../controller.dart';
 
 class SetBlock extends StatelessWidget {
-  SetBlock(
-      {this.children = const [],
-      required this.root,
-      required this.data,
-      required this.onUpdate,
-      required this.actions});
+  SetBlock({
+    this.children = const [],
+    required this.root,
+    required this.data,
+    required this.onUpdate,
+    required this.actions,
+    required this.propertySelectWidget,
+  });
+
   final List<Widget> children;
   final List<Widget> actions;
   final WidgetModel root;
   final Map<String, dynamic> data;
   final void Function(Map<String, dynamic>) onUpdate;
+  final Widget propertySelectWidget;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -25,23 +29,20 @@ class SetBlock extends StatelessWidget {
             color: Colors.amber,
           )),
       constraints: BoxConstraints(minHeight: 40, minWidth: 100),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Wrap(
+        // crossAxisAlignment: CrossAxisAlignment.center,
+        // mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
             padding: const EdgeInsets.all(4.0),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                ...actions,
                 Text(
                   'set',
                   style: TextStyle(color: Colors.black87),
                 ),
-                SizedBox(
-                  width: 55,
-                ),
-                ...actions
               ],
             ),
           ),
@@ -51,27 +52,7 @@ class SetBlock extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButton<String>(
-                  value: data['key'],
-                  onTap: () {},
-                  onChanged: (value) {
-                    data['key'] = value;
-                    data['root'] = root.key;
-                    data['type'] = EnumToString.convertToString(
-                        root.properties[value]!.type);
-                    onUpdate(data);
-                  },
-                  items: root.properties.entries
-                      .map((e) => DropdownMenuItem<String>(
-                            value: e.key,
-                            child: Text(
-                              e.key,
-                              style: TextStyle(color: Colors.black),
-                            ),
-                            onTap: () {},
-                          ))
-                      .toList(),
-                ),
+                propertySelectWidget,
                 if (data['key'] != null)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -84,9 +65,7 @@ class SetBlock extends StatelessWidget {
               ],
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Wrap(
             children: children,
           )
         ],

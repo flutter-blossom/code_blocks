@@ -5,6 +5,7 @@ import 'package:flutter_widget_model/flutter_widget_model.dart';
 enum InsertMode { prepend, append, insert, replace, changeParent }
 
 enum BlockType {
+  SetState,
   Set,
   Return,
   If,
@@ -34,10 +35,8 @@ class Block {
     return Block(
         key: map['key'],
         data: map['data'],
-        type: EnumToString.fromString(BlockType.values, map['type']) ??
-            BlockType.Error,
-        children:
-            (map['children'] as List).map((e) => Block.fromMap(e)).toList());
+        type: EnumToString.fromString(BlockType.values, map['type']) ?? BlockType.Error,
+        children: (map['children'] as List).map((e) => Block.fromMap(e)).toList());
   }
 
   Block copyWith(
@@ -57,14 +56,28 @@ class Block {
         'data': data,
         'children': children.map((e) => e.asMap).toList(),
       };
+
+  String toCode() {
+    final _code = children.map((e) => e.toCode()).join('');
+    final String? key = data['key'];
+    switch (type) {
+      case BlockType.SetState:
+        return 'setState(() { \n' + _code + ';})';
+      case BlockType.Set:
+        return key != null && _code != '' ? key + '=' + _code : '';
+      case BlockType.Add:
+        return "${data['key']} + ${data['value']} $_code";
+      default:
+        return _code;
+    }
+  }
 }
 
 class BlockController {
   final List<Block> children;
   final void Function(BlockController controller) resolve;
   final WidgetModel root;
-  BlockController(
-      {required this.children, required this.root, required this.resolve});
+  BlockController({required this.children, required this.root, required this.resolve});
 
   Function get function => runFunction;
 
@@ -95,8 +108,7 @@ class BlockController {
       if (child.key != key) {
         if (child.isParent) {
           _filteredChildren.add(child.copyWith(
-            children:
-                deleteBlock(key, parent: child, deleteChildren: deleteChildren),
+            children: deleteBlock(key, parent: child, deleteChildren: deleteChildren),
           ));
         } else {
           _filteredChildren.add(child);
@@ -106,8 +118,7 @@ class BlockController {
           final children = getBlock(key)?.children;
           children?.forEach((child) {
             _filteredChildren.add(child.copyWith(
-              children: deleteBlock(key,
-                  parent: child, deleteChildren: deleteChildren),
+              children: deleteBlock(key, parent: child, deleteChildren: deleteChildren),
             ));
           });
         }
@@ -142,8 +153,7 @@ class BlockController {
         if (mode == InsertMode.prepend) {
           _children.insert(index ?? 0, newNode);
         } else if (mode == InsertMode.append) {
-          _children.insert(
-              index != null ? index + 1 : _children.length, newNode);
+          _children.insert(index != null ? index + 1 : _children.length, newNode);
         } else if (mode == InsertMode.replace) {
           final children = _addChildrenFrom(_children[index ?? 0].key);
           _children.removeAt(index ?? 0);
@@ -182,7 +192,9 @@ class BlockController {
       if (block == null) {
         block = getLastBlock(e);
       }
-      final model = controller.getModel(block!.data['root']);
+      if (block == null) return;
+      final model =
+          block!.data['root'] != null ? controller.getModel(block!.data['root']) : null;
       if (model != null) {
         final property = model.properties[block!.data['key']];
         if (property == null) return;
@@ -200,6 +212,16 @@ class BlockController {
       final p = getParent(block!.key);
       if (p != null) calculate(controller, p, value);
     });
+  }
+
+  String toCode() {
+    final code = children.map((e) {
+      final c = e.toCode();
+      return c == '' ? '' : c + ';';
+    }).join();
+    return '''(){
+    $code 
+}''';
   }
 
   Block? getParent(String key, {Block? parent}) {
